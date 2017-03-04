@@ -1,16 +1,20 @@
 // https://docs.unity3d.com/560/Documentation/ScriptReference/Graphics.DrawMeshInstancedIndirect.html
 
 using UnityEngine;
- 
+using UnityEngine.Rendering;
+
 public class InstancedIndirectComputeExample : MonoBehaviour
 { 
     public int instanceCount = 100000;
     public Mesh instanceMesh;
     public Material instanceMaterial;
+
+    public ShadowCastingMode castShadows = ShadowCastingMode.Off;
+    public bool receiveShadows = false;
+
     public ComputeShader positionComputeShader;
     private int positionComputeKernelId;
 
-    private int cachedInstanceCount = -1;
     private ComputeBuffer positionBuffer;
     private ComputeBuffer argsBuffer;
     private ComputeBuffer colorBuffer;
@@ -25,25 +29,18 @@ public class InstancedIndirectComputeExample : MonoBehaviour
 
     void Update()
 	{ 
-        // Update starting position buffer
-        if (cachedInstanceCount != instanceCount)
-            CreateBuffers();
-
+        // Update position buffer
         UpdateBuffers();
 
         // Render
-        Graphics.DrawMeshInstancedIndirect(instanceMesh, 0, instanceMaterial, instanceMesh.bounds, argsBuffer);
+        Graphics.DrawMeshInstancedIndirect(instanceMesh, 0, instanceMaterial, instanceMesh.bounds, argsBuffer, 0, null, castShadows, receiveShadows);
     }
 
     void UpdateBuffers()
     {
-        positionComputeShader.SetBuffer(positionComputeKernelId, "positionBuffer", positionBuffer);
-
+        /// TODO this only works with POT, integral sqrt vals
         int bs = instanceCount / 64;
         positionComputeShader.Dispatch(positionComputeKernelId, bs, 1, 1);
-
-        positionComputeShader.SetFloat("_Dim", Mathf.Sqrt(instanceCount));
-        positionComputeShader.SetFloat("_Time", Time.time);
     }
 
 
@@ -63,20 +60,10 @@ public class InstancedIndirectComputeExample : MonoBehaviour
         positionBuffer	= new ComputeBuffer(instanceCount, 16);
         colorBuffer = new ComputeBuffer(instanceCount, 16);
 
-        Vector4[] positions = new Vector4[instanceCount];
-		Vector4[] colors	= new Vector4[instanceCount];
+		Vector4[] colors = new Vector4[instanceCount];
+        for (int i = 0; i < instanceCount; i++)
+            colors[i] = Random.ColorHSV();
 
-        for (int i=0; i < instanceCount; i++)
-		{
-            float angle = Random.Range(0.0f, Mathf.PI * 2.0f);
-            float distance = Random.Range(20.0f, 100.0f);
-            float height = Random.Range(-2.0f, 2.0f);
-            float size = Random.Range(0.05f, 0.25f);
-            positions[i]	= new Vector4(Mathf.Sin(angle) * distance, height, Mathf.Cos(angle) * distance, size);
-			colors[i]		= new Vector4( Random.value, Random.value, Random.value, 1f );
-        }
-
-        positionBuffer.SetData(positions);
         colorBuffer.SetData(colors);
 
         instanceMaterial.SetBuffer("positionBuffer", positionBuffer);
@@ -87,8 +74,10 @@ public class InstancedIndirectComputeExample : MonoBehaviour
         args[0] = numIndices;
         args[1] = (uint)instanceCount;
         argsBuffer.SetData(args);
- 
-        cachedInstanceCount = instanceCount;
+
+        positionComputeShader.SetBuffer(positionComputeKernelId, "positionBuffer", positionBuffer);
+        positionComputeShader.SetFloat("_Dim", Mathf.Sqrt(instanceCount));
+        positionComputeShader.SetFloat("_Time", Time.time);
     }
 
     void OnDisable()

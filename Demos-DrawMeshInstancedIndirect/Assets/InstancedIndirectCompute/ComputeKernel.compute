@@ -30,6 +30,7 @@ void CSPositionKernel (uint3 id : SV_DispatchThreadID)
 	float idy = floor(id.x / _Dim) - _Dim * 0.5;
 	float idx = (id.x % (int)_Dim) - _Dim * 0.5;
 	float2 p = get_point(float2(idx, idy));
-	positionBuffer[id.x] = float4(p.x, 0, p.y, 1);
-	//positionBuffer[id.x] = float4(idx, sin(idx), idy, 1);
+
+	//positionBuffer[id.x] = float4(p.x, 0, p.y, nrand(float2(idx, idy), 0));
+	positionBuffer[id.x] = float4(idx, 0, idy, nrand(float2(idx, idy),0));
 }
