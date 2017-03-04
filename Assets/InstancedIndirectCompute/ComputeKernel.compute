@@ -1,0 +1,35 @@
+﻿#pragma kernel CSPositionKernel
+ 
+ #define thread_group_size_x 64
+ #define thread_group_size_y 1
+ #define UNITY_PI 3.141549
+
+RWStructuredBuffer<float4> positionBuffer;
+float _Dim;
+
+// PRNG function
+float nrand(float2 uv, float salt)
+{
+    uv += float2(salt, 0);
+    return frac(sin(dot(uv, float2(12.9898, 78.233))) * 43758.5453);
+}
+
+// Get the point bound to the UV
+float2 get_point(float2 uv)
+{
+    float2 p = float2(nrand(uv, 0), nrand(uv, 1));
+    return (p - 0.5) * _Dim;
+}
+
+[numthreads(thread_group_size_x, thread_group_size_y, 1)]
+void CSPositionKernel (uint3 id : SV_DispatchThreadID)
+{
+	//float idy = floor(id.x / _Dim) / _Dim;
+	//float idx = (id.x % (int)_Dim) / _Dim;
+	float idy = floor(id.x / _Dim) - _Dim * 0.5;
+	float idx = (id.x % (int)_Dim) - _Dim * 0.5;
+	
+	positionBuffer[id.x] = float4(idx, 0, idy, 1);
+
+	//positionBuffer[(int)id.x] =  float4(get_point(float2(idx, idy)), 0,1);
+}

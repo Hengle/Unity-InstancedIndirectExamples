@@ -2,17 +2,18 @@
 
 using UnityEngine;
  
-public class InstancedIndirectSelectionExample : MonoBehaviour
+public class InstancedIndirectComputeExample : MonoBehaviour
 { 
     public int instanceCount = 100000;
     public Mesh instanceMesh;
     public Material instanceMaterial;
-    public Material instanceSelectionMaterial;
+    public ComputeShader positionComputeShader;
+    private int positionComputeKernelId;
 
     private int cachedInstanceCount = -1;
     private ComputeBuffer positionBuffer;
     private ComputeBuffer argsBuffer;
-	private ComputeBuffer colorBuffer;
+    private ComputeBuffer colorBuffer;
 
     private uint[] args = new uint[5] { 0, 0, 0, 0, 0 };
  
@@ -20,6 +21,21 @@ public class InstancedIndirectSelectionExample : MonoBehaviour
 	{
         argsBuffer = new ComputeBuffer(1, args.Length * sizeof(uint), ComputeBufferType.IndirectArguments);
         UpdateBuffers();
+
+        instanceCount = Mathf.ClosestPowerOfTwo(instanceCount);
+
+        positionComputeKernelId = positionComputeShader.FindKernel("CSPositionKernel");
+    }
+
+
+    void RunCS()
+    {
+        positionComputeShader.SetBuffer(positionComputeKernelId, "positionBuffer", positionBuffer);
+
+        int bs = instanceCount / 64;
+        positionComputeShader.Dispatch(positionComputeKernelId, bs, 1, 1);
+
+        positionComputeShader.SetFloat("_Dim", Mathf.Sqrt(instanceCount));
     }
 
     void Update()
@@ -28,20 +44,15 @@ public class InstancedIndirectSelectionExample : MonoBehaviour
         if (cachedInstanceCount != instanceCount) UpdateBuffers();
 
         // Pad input
-        if (Input.GetAxisRaw("Horizontal") != 0.0f) instanceCount = (int)Mathf.Clamp(instanceCount + Input.GetAxis("Horizontal") * 40000, 1.0f, 5000000.0f);
- 
+        //if (Input.GetAxisRaw("Horizontal") != 0.0f) instanceCount = (int)Mathf.Clamp(instanceCount + Input.GetAxis("Horizontal") * 40000, 1.0f, 5000000.0f);
+
+        RunCS();
+
         // Render
       //  instanceMaterial.SetBuffer("positionBuffer", positionBuffer);
-        Graphics.DrawMeshInstancedIndirect(instanceMesh, 0, instanceMaterial, new Bounds(Vector3.zero, new Vector3(100.0f, 100.0f, 100.0f)), argsBuffer);//, 0, null, UnityEngine.Rendering.ShadowCastingMode.On, true, 0);
+        Graphics.DrawMeshInstancedIndirect(instanceMesh, 0, instanceMaterial, new Bounds(Vector3.zero, new Vector3(100.0f, 100.0f, 100.0f)), argsBuffer);
     }
-
-	// Rendering the selection shader only into culling layer 8 ( 'Selection' )
-	public void RenderSelectionInstances()
-	{
-		Graphics.DrawMeshInstancedIndirect( instanceMesh, 0, instanceSelectionMaterial, new Bounds( Vector3.zero, new Vector3( 100.0f, 100.0f, 100.0f ) ), argsBuffer, 0, null, UnityEngine.Rendering.ShadowCastingMode.On, true, 8 );
-	}
-
-
+ 
     void OnGUI()
 	{ 
         GUI.Label(new Rect(265, 12, 200, 30), "Instance Count: " + instanceCount.ToString("N0"));
@@ -54,10 +65,10 @@ public class InstancedIndirectSelectionExample : MonoBehaviour
 
         // Positions & Colors
         if (positionBuffer != null) positionBuffer.Release();
-		if (colorBuffer != null) colorBuffer.Release();
+        if (colorBuffer != null) colorBuffer.Release();
 
         positionBuffer	= new ComputeBuffer(instanceCount, 16);
-		colorBuffer		= new ComputeBuffer(instanceCount, 4*4);
+        colorBuffer = new ComputeBuffer(instanceCount, 16);
 
         Vector4[] positions = new Vector4[instanceCount];
 		Vector4[] colors	= new Vector4[instanceCount];
@@ -73,12 +84,10 @@ public class InstancedIndirectSelectionExample : MonoBehaviour
         }
 
         positionBuffer.SetData(positions);
-		colorBuffer.SetData(colors);
+        colorBuffer.SetData(colors);
 
-		instanceMaterial.SetBuffer("positionBuffer", positionBuffer);
-		instanceMaterial.SetBuffer("colorBuffer", colorBuffer);
-
-		instanceSelectionMaterial.SetBuffer("positionBuffer", positionBuffer);
+        instanceMaterial.SetBuffer("positionBuffer", positionBuffer);
+        instanceMaterial.SetBuffer("colorBuffer", colorBuffer);
 
         // indirect args
         uint numIndices = (instanceMesh != null) ? (uint)instanceMesh.GetIndexCount(0) : 0;
@@ -94,7 +103,7 @@ public class InstancedIndirectSelectionExample : MonoBehaviour
         if (positionBuffer != null) positionBuffer.Release();
         positionBuffer = null;
 
-		if (colorBuffer != null) colorBuffer.Release();
+        if (colorBuffer != null) colorBuffer.Release();
         colorBuffer = null;
 
         if (argsBuffer != null) argsBuffer.Release();
