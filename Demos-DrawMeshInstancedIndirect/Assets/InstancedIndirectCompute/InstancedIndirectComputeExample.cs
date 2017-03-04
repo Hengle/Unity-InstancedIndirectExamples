@@ -20,15 +20,22 @@ public class InstancedIndirectComputeExample : MonoBehaviour
     void Start()
 	{
         argsBuffer = new ComputeBuffer(1, args.Length * sizeof(uint), ComputeBufferType.IndirectArguments);
-        UpdateBuffers();
-
-        instanceCount = Mathf.ClosestPowerOfTwo(instanceCount);
-
-        positionComputeKernelId = positionComputeShader.FindKernel("CSPositionKernel");
+        CreateBuffers();
     }
 
+    void Update()
+	{ 
+        // Update starting position buffer
+        if (cachedInstanceCount != instanceCount)
+            CreateBuffers();
 
-    void RunCS()
+        UpdateBuffers();
+
+        // Render
+        Graphics.DrawMeshInstancedIndirect(instanceMesh, 0, instanceMaterial, instanceMesh.bounds, argsBuffer);
+    }
+
+    void UpdateBuffers()
     {
         positionComputeShader.SetBuffer(positionComputeKernelId, "positionBuffer", positionBuffer);
 
@@ -36,32 +43,18 @@ public class InstancedIndirectComputeExample : MonoBehaviour
         positionComputeShader.Dispatch(positionComputeKernelId, bs, 1, 1);
 
         positionComputeShader.SetFloat("_Dim", Mathf.Sqrt(instanceCount));
+        positionComputeShader.SetFloat("_Time", Time.time);
     }
 
-    void Update()
-	{ 
-        // Update starting position buffer
-        if (cachedInstanceCount != instanceCount) UpdateBuffers();
 
-        // Pad input
-        //if (Input.GetAxisRaw("Horizontal") != 0.0f) instanceCount = (int)Mathf.Clamp(instanceCount + Input.GetAxis("Horizontal") * 40000, 1.0f, 5000000.0f);
-
-        RunCS();
-
-        // Render
-      //  instanceMaterial.SetBuffer("positionBuffer", positionBuffer);
-        Graphics.DrawMeshInstancedIndirect(instanceMesh, 0, instanceMaterial, new Bounds(Vector3.zero, new Vector3(100.0f, 100.0f, 100.0f)), argsBuffer);
-    }
- 
-    void OnGUI()
-	{ 
-        GUI.Label(new Rect(265, 12, 200, 30), "Instance Count: " + instanceCount.ToString("N0"));
-        instanceCount = (int)GUI.HorizontalSlider(new Rect(25, 20, 200, 30), (float)instanceCount, 1.0f, 5000000.0f);
-    }
- 
-    void UpdateBuffers()
+    void CreateBuffers()
 	{ 
 		if ( instanceCount < 1 ) instanceCount = 1;
+
+        instanceCount = Mathf.ClosestPowerOfTwo(instanceCount);
+
+        positionComputeKernelId = positionComputeShader.FindKernel("CSPositionKernel");
+        instanceMesh.bounds = new Bounds(Vector3.zero, Vector3.one * 10000f);
 
         // Positions & Colors
         if (positionBuffer != null) positionBuffer.Release();
@@ -108,5 +101,11 @@ public class InstancedIndirectComputeExample : MonoBehaviour
 
         if (argsBuffer != null) argsBuffer.Release();
         argsBuffer = null;
+    }
+
+    void OnGUI()
+    {
+        GUI.Label(new Rect(265, 12, 200, 30), "Instance Count: " + instanceCount.ToString("N0"));
+        instanceCount = (int)GUI.HorizontalSlider(new Rect(25, 20, 200, 30), (float)instanceCount, 1.0f, 5000000.0f);
     }
 }

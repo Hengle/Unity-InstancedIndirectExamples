@@ -6,6 +6,7 @@
 
 RWStructuredBuffer<float4> positionBuffer;
 float _Dim;
+float _Time;
 
 // PRNG function
 float nrand(float2 uv, float salt)
@@ -28,8 +29,7 @@ void CSPositionKernel (uint3 id : SV_DispatchThreadID)
 	//float idx = (id.x % (int)_Dim) / _Dim;
 	float idy = floor(id.x / _Dim) - _Dim * 0.5;
 	float idx = (id.x % (int)_Dim) - _Dim * 0.5;
-	
-	positionBuffer[id.x] = float4(idx, 0, idy, 1);
-
-	//positionBuffer[(int)id.x] =  float4(get_point(float2(idx, idy)), 0,1);
+	float2 p = get_point(float2(idx, idy));
+	positionBuffer[id.x] = float4(p.x, 0, p.y, 1);
+	//positionBuffer[id.x] = float4(idx, sin(idx), idy, 1);
 }
