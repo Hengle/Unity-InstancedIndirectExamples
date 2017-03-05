@@ -2,10 +2,12 @@ using UnityEngine;
 using UnityEngine.Rendering;
 
 /// <summary>
-/// This demo shows the use of Compute Shaders to update the object's
-/// positions. The buffer is stored and updated directly in GPU.
+/// This demo shows the use of the procedural instancing features to render objects
+/// without need of any position buffer. The values are calculated direclty inside the 
+/// shader. 
+/// The color buffer is used for debug only.
 /// </summary>
-public class InstancedIndirectComputeExample : MonoBehaviour
+public class InstancedIndirectNoBuffer : MonoBehaviour
 { 
     public int instanceCount = 100000;
     public Mesh instanceMesh;
@@ -14,10 +16,6 @@ public class InstancedIndirectComputeExample : MonoBehaviour
     public ShadowCastingMode castShadows = ShadowCastingMode.Off;
     public bool receiveShadows = false;
 
-    public ComputeShader positionComputeShader;
-    private int positionComputeKernelId;
-
-    private ComputeBuffer positionBuffer;
     private ComputeBuffer argsBuffer;
     private ComputeBuffer colorBuffer;
 
@@ -31,20 +29,7 @@ public class InstancedIndirectComputeExample : MonoBehaviour
 
     void Update()
 	{ 
-        // Update position buffer
-        UpdateBuffers();
-
-        // Render
         Graphics.DrawMeshInstancedIndirect(instanceMesh, 0, instanceMaterial, instanceMesh.bounds, argsBuffer, 0, null, castShadows, receiveShadows);
-    }
-
-    void UpdateBuffers()
-    {
-		positionComputeShader.SetFloat("_Time", Time.time);
-
-		/// TODO this only works with POT, integral sqrt vals
-		int bs = instanceCount / 64;
-        positionComputeShader.Dispatch(positionComputeKernelId, bs, 1, 1);
     }
 
     void CreateBuffers()
@@ -52,15 +37,11 @@ public class InstancedIndirectComputeExample : MonoBehaviour
 		if ( instanceCount < 1 ) instanceCount = 1;
 
         instanceCount = Mathf.ClosestPowerOfTwo(instanceCount);
-
-        positionComputeKernelId = positionComputeShader.FindKernel("CSPositionKernel");
-        instanceMesh.bounds = new Bounds(Vector3.zero, Vector3.one * 10000f);
-
-        // Positions & Colors
-        if (positionBuffer != null) positionBuffer.Release();
+        instanceMesh.bounds = new Bounds(Vector3.zero, Vector3.one * 10000f); //avoid culling
+        
+		/// Colors - for debug only
         if (colorBuffer != null) colorBuffer.Release();
 
-        positionBuffer	= new ComputeBuffer(instanceCount, 16);
         colorBuffer = new ComputeBuffer(instanceCount, 16);
 
 		Vector4[] colors = new Vector4[instanceCount];
@@ -69,7 +50,6 @@ public class InstancedIndirectComputeExample : MonoBehaviour
 
         colorBuffer.SetData(colors);
 
-        instanceMaterial.SetBuffer("positionBuffer", positionBuffer);
         instanceMaterial.SetBuffer("colorBuffer", colorBuffer);
 
         // indirect args
@@ -78,15 +58,13 @@ public class InstancedIndirectComputeExample : MonoBehaviour
         args[1] = (uint)instanceCount;
         argsBuffer.SetData(args);
 
-        positionComputeShader.SetBuffer(positionComputeKernelId, "positionBuffer", positionBuffer);
-        positionComputeShader.SetFloat("_Dim", Mathf.Sqrt(instanceCount));
+		/// TODO this assumes instanceCount is _Dim * _Dim - integral root!
+		/// we must change this to allow more flexible sizes.  
+		Shader.SetGlobalFloat("_Dim", Mathf.Sqrt(instanceCount));
     }
 
     void OnDisable()
 	{
-        if (positionBuffer != null) positionBuffer.Release();
-        positionBuffer = null;
-
         if (colorBuffer != null) colorBuffer.Release();
         colorBuffer = null;
 

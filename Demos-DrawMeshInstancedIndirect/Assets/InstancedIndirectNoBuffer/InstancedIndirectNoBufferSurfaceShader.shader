@@ -1,4 +1,4 @@
-Shader "Instanced/InstancedIndirectCompute" 
+Shader "Instanced/InstancedIndirectNoBuffer" 
 {
 	Properties{
 		_MainTex("Albedo (RGB)", 2D) = "white" {}
@@ -22,17 +22,35 @@ Shader "Instanced/InstancedIndirectCompute"
 		};
 
 		#ifdef UNITY_PROCEDURAL_INSTANCING_ENABLED
-			StructuredBuffer<float4> positionBuffer;
 			StructuredBuffer<float4> colorBuffer;
 		#endif
+		float _Dim;
+
+		float rand(in float2 uv)
+		{
+			float2 noise = (frac(sin(dot(uv ,float2(12.9898,78.233)*2.0)) * 43758.5453));
+			return abs(noise.x + noise.y) * 0.5;
+		}
+
+		void rotate2D(inout float2 v, float r)
+		{
+			float s, c;
+			sincos(r, s, c);
+			v = float2(v.x * c - v.y * s, v.x * s + v.y * c);
+		}
 
 	void setup()
 	{
 #ifdef UNITY_PROCEDURAL_INSTANCING_ENABLED
-		/// Positions are calculated in the compute shader.
-		/// here we just use them.
-		float4 position = positionBuffer[unity_InstanceID];
+		// this uv assumes the # of instances is _Dim * _Dim. 
+		// so we calculate the uv inside a grid of _Dim x _Dim elements.
+		float2 uv = float2( floor(unity_InstanceID / _Dim) / _Dim, (unity_InstanceID % (int)_Dim) / _Dim);
+		// in this case, _Dim can be replaced by the size in the world
+		float4 position = float4((uv.x - 0.5) * _Dim, 0, (uv.y - 0.5) * _Dim, rand(uv)); 
 		float scale = position.w;
+
+		float rotation = scale * scale * _Time.y * 0.5f;
+		rotate2D(position.xz, rotation);
 
 		unity_ObjectToWorld._11_21_31_41 = float4(scale, 0, 0, 0);
 		unity_ObjectToWorld._12_22_32_42 = float4(0, scale, 0, 0);
