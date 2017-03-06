@@ -8,8 +8,9 @@ using UnityEngine.Rendering;
 /// The color buffer is used for debug only.
 /// </summary>
 public class InstancedIndirectNoBuffer : MonoBehaviour
-{ 
-    public int instanceCount = 100000;
+{
+    public int gridDim = 1000;
+    public int instanceCount = 0;
     public Mesh instanceMesh;
     public Material instanceMaterial;
 
@@ -23,6 +24,7 @@ public class InstancedIndirectNoBuffer : MonoBehaviour
  
     void Start()
 	{
+        instanceCount = gridDim * gridDim;
         argsBuffer = new ComputeBuffer(1, args.Length * sizeof(uint), ComputeBufferType.IndirectArguments);
         CreateBuffers();
     }
@@ -36,7 +38,7 @@ public class InstancedIndirectNoBuffer : MonoBehaviour
 	{ 
 		if ( instanceCount < 1 ) instanceCount = 1;
 
-        instanceCount = Mathf.ClosestPowerOfTwo(instanceCount);
+        //instanceCount = Mathf.ClosestPowerOfTwo(instanceCount);
         instanceMesh.bounds = new Bounds(Vector3.zero, Vector3.one * 10000f); //avoid culling
         
 		/// Colors - for debug only
@@ -58,9 +60,7 @@ public class InstancedIndirectNoBuffer : MonoBehaviour
         args[1] = (uint)instanceCount;
         argsBuffer.SetData(args);
 
-		/// TODO this assumes instanceCount is _Dim * _Dim - integral root!
-		/// we must change this to allow more flexible sizes.  
-		Shader.SetGlobalFloat("_Dim", Mathf.Sqrt(instanceCount));
+		Shader.SetGlobalFloat("_Dim", gridDim);
     }
 
     void OnDisable()
