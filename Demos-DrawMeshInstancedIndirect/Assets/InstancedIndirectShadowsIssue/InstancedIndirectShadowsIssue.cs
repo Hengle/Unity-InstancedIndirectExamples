@@ -6,6 +6,10 @@ using UnityEngine.Rendering;
 /// without need of any position buffer. The values are calculated direclty inside the 
 /// shader. 
 /// Shadowing is broken when more than one DrawMeshInstancedIndirect is made. 
+/// - Tested with different materials, same materials.
+/// - Different bounds settings.
+/// - Same args buffer (for different draw calls with same mesh).
+/// - Different args buffers (with same mesh, and with different meshes).
 /// The color buffer is used for debug only.
 /// </summary>
 public class InstancedIndirectShadowsIssue : MonoBehaviour
