@@ -47,7 +47,7 @@ Shader "Instanced/InstancedIndirectShadowsIssue"
 		// so we calculate the uv inside a grid of _Dim x _Dim elements.
 		float2 uv = float2( floor(unity_InstanceID / _Dim) / _Dim, (unity_InstanceID % (int)_Dim) / _Dim);
 		// in this case, _Dim can be replaced by the size in the world
-		float4 position = _Pos + float4(uv.x * _Dim, 0, uv.y * _Dim, 1);
+		float4 position = _Pos + float4(uv.x * _Dim * 2, 0, uv.y * _Dim * 2, 1);
 		float scale = position.w;
 
 		//float rotation = scale * scale * _Time.y * 0.5f;

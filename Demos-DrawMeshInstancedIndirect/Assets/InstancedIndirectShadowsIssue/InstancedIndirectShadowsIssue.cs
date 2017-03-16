@@ -10,6 +10,8 @@ using UnityEngine.Rendering;
 /// - Different bounds settings.
 /// - Same args buffer (for different draw calls with same mesh).
 /// - Different args buffers (with same mesh, and with different meshes).
+/// WorkAround: adding an unique mpb per draw call apparently works!
+/// 
 /// The color buffer is used for debug only.
 /// </summary>
 public class InstancedIndirectShadowsIssue : MonoBehaviour
@@ -28,6 +30,11 @@ public class InstancedIndirectShadowsIssue : MonoBehaviour
 
 	public Mesh[] meshes;
 	private ComputeBuffer[] argsBuffers;
+	public Shader shader;
+
+	public bool[] render;
+
+	MaterialPropertyBlock[] mpbs;
 
 	void Start()
 	{
@@ -39,10 +46,12 @@ public class InstancedIndirectShadowsIssue : MonoBehaviour
 			argsBuffers[i] = new ComputeBuffer(1, args.Length * sizeof(uint), ComputeBufferType.IndirectArguments);
 		}
 
+		mpbs = new MaterialPropertyBlock[meshes.Length];
 		materials = new Material[meshes.Length];
 		for (int i = 0; i < materials.Length; i++)
 		{
 			materials[i] = new Material(instanceMaterial);
+			mpbs[i] = new MaterialPropertyBlock();
 		}
 
 		CreateBuffers();
@@ -50,13 +59,18 @@ public class InstancedIndirectShadowsIssue : MonoBehaviour
 
 	void Update()
 	{
+		
 		for (int i = 0; i < meshes.Length; i++)
 		{
 			materials[i].SetFloat("_Dim", gridDim);
-			materials[i].SetVector("_Pos", new Vector4(i * (gridDim + 5), 0, 0, 0));
+			materials[i].SetVector("_Pos", new Vector4(i * (gridDim + 10), 0, 0, 0));
 			materials[i].SetBuffer("colorBuffer", colorBuffer);
+			
+			/// this is the magic line. Uncomment this for shadows!! 
+			mpbs[i].SetFloat("_Bla", (float)i);
 
-			Graphics.DrawMeshInstancedIndirect(meshes[i], 0, materials[i], meshes[i].bounds, argsBuffers[i], 0, null, castShadows, receiveShadows);
+			if (render[i])
+				Graphics.DrawMeshInstancedIndirect(meshes[i], 0, materials[i], meshes[i].bounds, argsBuffers[i], 0, mpbs[i], castShadows, receiveShadows);
 		}
 	}
 
