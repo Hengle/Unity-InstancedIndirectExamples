@@ -11,5 +11,31 @@ The example on scene InstancedIndirectComputeExample demonstrates the use of Com
 ### InstancedIndirectNoBuffer
 The example on scene InstancedIndirectNoBuffer shows how to position the objects on the fly, direclty within the shader. This approach eliminates the use of any auxiliar buffer, and positions can be calculated directly in the surface shader. This is very attractive for when the calculations are simple and the number of instances is very high.
 
+### InstancedIndirectShadowsIssue
+
+There is an open issue in Unity 5.6b that, when issuing several drawcalls using DrawMeshInstancedIndirect the shadow is broken. The bug was reported [here](https://issuetracker.unity3d.com/issues/drawmeshinstanceindirect-wrong-computebuffer-being-passsed-to-consecutive-drawmesh-calls). A blog post discussing it can be found [here](https://forum.unity3d.com/threads/drawmeshinstancedindirect-example-comments-and-questions.446080/#post-2995966).
+Here's the workaround:
+
+* If you duplicate the shader file, and rename it. Add each duplicate to a different material, it works. Which indicates that Unity is having troubles differentiating among the materials, and is trying to batch them somehow. 
+*  So I had to find a way to force Unity disable whatever it was that was not separating the materials. Creating the material from code (using the shader or the original material) was not working
+*  The uniforms I was passing with the materials were different from each other, but that didn't do it.
+*  The only thing left was the MaterialPropertyBlock (which I wasn't using). Setting an empty mpb per draw call also didn't work.
+*  What did work was to set an unique dummy variable per mpb, so that Unity will have to issue a different call. The variable doesn't even have to be used in the shader.
+
+        for (int i = 0; i < meshes.Length; i++)
+        {
+            materials[i].SetFloat("_Dim", gridDim);
+            .......
+            /// this is the magic line. Uncomment this for shadows!! 
+            mpbs[i].SetFloat("_Bla", (float)i);
+            Graphics.DrawMeshInstancedIndirect(meshes[i], 0, materials[i], meshes[i].bounds, argsBuffers[i], 0, mpbs[i], castShadows, receiveShadows);
+        }
+
+It is not ideal, but it works!! Image with 4 draw calls (one per different group).
+
+![Screenshot](Untitled.png)
+
+
+
 ** NOTE: these are WIP demos.
 
