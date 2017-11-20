@@ -43,7 +43,7 @@ public class InstancedIndirectShadowsIssue : MonoBehaviour
 		argsBuffers = new ComputeBuffer[meshes.Length];
 		for (int i = 0; i < meshes.Length; i++)
 		{
-			argsBuffers[i] = new ComputeBuffer(1, args.Length * sizeof(uint), ComputeBufferType.IndirectArguments);
+			argsBuffers[i] = new ComputeBuffer(5, sizeof(uint), ComputeBufferType.IndirectArguments);
 		}
 
 		mpbs = new MaterialPropertyBlock[meshes.Length];

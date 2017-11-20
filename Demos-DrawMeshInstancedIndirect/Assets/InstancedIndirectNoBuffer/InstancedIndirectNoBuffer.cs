@@ -25,7 +25,7 @@ public class InstancedIndirectNoBuffer : MonoBehaviour
     void Start()
 	{
         instanceCount = gridDim * gridDim;
-        argsBuffer = new ComputeBuffer(1, args.Length * sizeof(uint), ComputeBufferType.IndirectArguments);
+        argsBuffer = new ComputeBuffer(5, sizeof(uint), ComputeBufferType.IndirectArguments);
         CreateBuffers();
     }
 

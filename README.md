@@ -11,6 +11,10 @@ The example on scene InstancedIndirectComputeExample demonstrates the use of Com
 ### InstancedIndirectNoBuffer
 The example on scene InstancedIndirectNoBuffer shows how to position the objects on the fly, direclty within the shader. This approach eliminates the use of any auxiliar buffer, and positions can be calculated directly in the surface shader. This is very attractive for when the calculations are simple and the number of instances is very high.
 
+### InstancedIndirectComputeAppend
+The example on scene InstancedIndirectComputeAppend shows how to render instances when the number of elements is not known beforehand. 
+A compute is dispatched with N thread but not all of them assign values to the position buffer. An AppendStructuredBuffer is used in this case [+info](https://msdn.microsoft.com/en-us/library/windows/desktop/ff471448(v=vs.85).aspx).
+
 ### InstancedIndirectShadowsIssue
 
 There is an open issue in Unity 5.6b that, when issuing several drawcalls using DrawMeshInstancedIndirect the shadow is broken. The bug was reported [here](https://issuetracker.unity3d.com/issues/drawmeshinstanceindirect-wrong-computebuffer-being-passsed-to-consecutive-drawmesh-calls). A blog post discussing it can be found [here](https://forum.unity3d.com/threads/drawmeshinstancedindirect-example-comments-and-questions.446080/#post-2995966).
