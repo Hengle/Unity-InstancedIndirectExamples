@@ -7,13 +7,12 @@ The example on scene InstancedIndirectExample is a slightly expanded version of 
 ### InstancedIndirectComputeExample
 The example on scene InstancedIndirectComputeExample demonstrates the use of Compute Shaders to generate position data. Compute Shaders are specially useful when the buffers need constant update, as the buffer remains in GPU and we can take advantage of many threads to perform the calculations. 
 
-
 ### InstancedIndirectNoBuffer
-The example on scene InstancedIndirectNoBuffer shows how to position the objects on the fly, direclty within the shader. This approach eliminates the use of any auxiliar buffer, and positions can be calculated directly in the surface shader. This is very attractive for when the calculations are simple and the number of instances is very high.
+The example on scene InstancedIndirectNoBuffer shows how to position the objects on the fly, directly within the shader. This approach eliminates the use of any auxiliar buffer, and positions can be calculated directly in the surface shader. This is very attractive for when the calculations are simple and the number of instances is very high.
 
 ### InstancedIndirectComputeAppend
 The example on scene InstancedIndirectComputeAppend shows how to render instances when the number of elements is not known beforehand. 
-A compute is dispatched with N thread but not all of them assign values to the position buffer. An AppendStructuredBuffer is used in this case [+info](https://msdn.microsoft.com/en-us/library/windows/desktop/ff471448(v=vs.85).aspx).
+A compute is dispatched with N threads but not all of them assign values to the position buffer. An AppendStructuredBuffer is used in this case [+info](https://msdn.microsoft.com/en-us/library/windows/desktop/ff471448(v=vs.85).aspx). As the CPU does not know how many instances were created, we use the CopyCount function to update the args buffer that is passed to the DrawMeshInstancedIndirect function.
 
 ### InstancedIndirectShadowsIssue
 
